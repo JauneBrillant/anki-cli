@@ -1,11 +1,8 @@
+import os
 import requests
-from googletrans import Translator
+from openai import OpenAI
 
-
-def translate_text(text):
-    translator = Translator()
-    translation = translator.translate(text, src="en", dest="ja")
-    return translation.text
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 def create_anki_card(front, back):
@@ -26,6 +23,20 @@ def create_anki_card(front, back):
     return response.json()
 
 
+def translate(text_en):
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": "translatethis into japanese\n\n" + text_en,
+            }
+        ],
+        model="gpt-3.5-turbo",
+    )
+    text_jp = chat_completion.choices[0].message.content
+    return text_jp
+
+
 def main():
     while True:
         text_eng = input("--- type sentence ---\n").strip()
@@ -35,13 +46,10 @@ def main():
         if not text_eng:
             continue
 
-        text_jp = translate_text(text_eng)
+        text_jp = translate(text_eng)
+        print(text_jp)
 
-        result = create_anki_card(text_eng, text_jp)
-        # if result.get("error") is None:
-        #     print("success")
-        # else:
-        #     print("fail")
+        create_anki_card(text_eng, text_jp)
 
 
 if __name__ == "__main__":
